@@ -76,7 +76,7 @@ class STrack(BaseTrack):
         else:
             self.cls_hist.append([cls, score])
             self.cls = cls
-
+            
     def predict(self):
         mean_state = self.mean.copy()
         if self.state != TrackState.Tracked:
@@ -183,67 +183,95 @@ class STrack(BaseTrack):
 
         if self.rois:
 
-            if len(self.path_history) < 2:
+            if len(self.path_history) < 3:
                 return {}
             
             current_point = self.path_history[-1]
             previous_point = self.path_history[-2]
-            
-            for id, roi in self.rois.items():
+            previous_previous_point = self.path_history[-3]
 
-                if current_point["in_roi"][id] and (not previous_point["in_roi"][id]):
-                    self.in_crossing_id = self.check_crossing([previous_point["point"], current_point["point"]], 
-                                                              roi, 
-                                                              leaving=False)
-                    if self.in_crossing_id == 2:
-                        message = {
-                        "roi": id,
-                        "frontier": 0,
-                        "class": int(self.cls),
-                        "action": 1,
-                        "track_id": self.track_id}
-                        msg_key = str(id)+"_"+str(0)
-                        if msg_key not in self.messages:
-                            self.messages[str(id)+"_"+str(0)] = deepcopy(message)
-                    else:
-                        message = {
-                            "roi": id,
-                            "frontier": self.in_crossing_id,
-                            "class": int(self.cls),
-                            "action": 0,
-                            "track_id": self.track_id}
-                        msg_key = str(id)+"_"+str(self.in_crossing_id)
-                        if msg_key not in self.messages:
-                            self.messages[str(id)+"_"+str(self.in_crossing_id)] = deepcopy(message)
-                    #print("messages in track: ", self.messages)
+            # if self.track_id <= 1.1:
+            #     print(current_point)
+            #     print(previous_point)
+
+            event = None
+
+            if any((previous_point["in_roi"]["1_0"], previous_previous_point["in_roi"]["1_0"])) and current_point["in_roi"]["1_1"]:
+                event = 1
+                print(event, self.track_id)
+            elif any((previous_point["in_roi"]["1_1"], previous_previous_point["in_roi"]["1_1"])) and current_point["in_roi"]["1_0"]:
+                event = 0
+                print(event, self.track_id)
+
+            if event is not None:
+                message = {
+                    "roi": id,
+                    "frontier": 0,
+                    "class": int(self.cls),
+                    "action": event,
+                    "track_id": self.track_id}
+
+                msg_key = str(self.track_id)
+                if msg_key not in self.messages:
+                    self.messages[msg_key] = deepcopy(message)
+            
                     return message
+
+            # for id, roi in self.rois.items():
+
+            #     if current_point["in_roi"][id] and (not previous_point["in_roi"][id]):
+            #         self.in_crossing_id = self.check_crossing([previous_point["point"], current_point["point"]], 
+            #                                                   roi, 
+            #                                                   leaving=False)
+            #         if self.in_crossing_id == 2:
+            #             message = {
+            #             "roi": id,
+            #             "frontier": 0,
+            #             "class": int(self.cls),
+            #             "action": 1,
+            #             "track_id": self.track_id}
+            #             msg_key = str(id)+"_"+str(0)
+            #             if msg_key not in self.messages:
+            #                 self.messages[str(id)+"_"+str(0)] = deepcopy(message)
+            #         else:
+            #             message = {
+            #                 "roi": id,
+            #                 "frontier": self.in_crossing_id,
+            #                 "class": int(self.cls),
+            #                 "action": 0,
+            #                 "track_id": self.track_id}
+            #             msg_key = str(id)+"_"+str(self.in_crossing_id)
+            #             if msg_key not in self.messages:
+            #                 self.messages[str(id)+"_"+str(self.in_crossing_id)] = deepcopy(message)
+            #         #print("messages in track: ", self.messages)
+            #         return message
                 
-                if (not current_point["in_roi"][id]) and previous_point["in_roi"][id]:
-                    self.out_crossing_id = self.check_crossing([previous_point["point"], current_point["point"]], 
-                                                               roi, 
-                                                               leaving=True)
-                    if self.out_crossing_id == 2:
-                        message = {
-                        "roi": id,
-                        "frontier": 0,
-                        "class": int(self.cls),
-                        "action": 0,
-                        "track_id": self.track_id}
-                        msg_key = str(id)+"_"+str(0)
-                        if msg_key not in self.messages:
-                            self.messages[str(id)+"_"+str(0)] = deepcopy(message)
-                    else:
-                        message = {
-                            "roi": id,
-                            "frontier": self.out_crossing_id,
-                            "class": int(self.cls),
-                            "action": 1,
-                            "track_id": self.track_id}
-                        msg_key = str(id)+"_"+str(self.out_crossing_id)
-                        if msg_key not in self.messages:
-                            self.messages[str(id)+"_"+str(self.out_crossing_id)] = deepcopy(message)
+            #     if (not current_point["in_roi"][id]) and previous_point["in_roi"][id]:
+            #         self.out_crossing_id = self.check_crossing([previous_point["point"], current_point["point"]], 
+            #                                                    roi, 
+            #                                                    leaving=True)
+            #         if self.out_crossing_id == 2:
+            #             message = {
+            #             "roi": id,
+            #             "frontier": 0,
+            #             "class": int(self.cls),
+            #             "action": 0,
+            #             "track_id": self.track_id}
+            #             msg_key = str(id)+"_"+str(0)
+            #             if msg_key not in self.messages:
+            #                 self.messages[str(id)+"_"+str(0)] = deepcopy(message)
+            #         else:
+            #             message = {
+            #                 "roi": id,
+            #                 "frontier": self.out_crossing_id,
+            #                 "class": int(self.cls),
+            #                 "action": 1,
+            #                 "track_id": self.track_id}
+            #             msg_key = str(id)+"_"+str(self.out_crossing_id)
+            #             if msg_key not in self.messages:
+            #                 self.messages[str(id)+"_"+str(self.out_crossing_id)] = deepcopy(message)
                     
-                    return message
+            #         return message
 
         return {}
     
@@ -472,7 +500,7 @@ class BoTSORT(object):
         #roi
         self.rois = rois
 
-    def update(self, output_results, img, event_on_lost_track = True):
+    def update(self, output_results, img, event_on_lost_track = False):
 
         events = []
 
@@ -583,6 +611,7 @@ class BoTSORT(object):
                 message = track.update(detections[idet], self.frame_id)
                 if message and not event_on_lost_track:
                     events.append(message)
+                    print(message)
                 activated_starcks.append(track)
             else:
                 track.re_activate(det, self.frame_id, new_id=False)
@@ -619,6 +648,7 @@ class BoTSORT(object):
                 message = track.update(det, self.frame_id)
                 if message and not event_on_lost_track:
                     events.append(message)
+                    print(message)
                 activated_starcks.append(track)
             else:
                 track.re_activate(det, self.frame_id, new_id=False)
@@ -699,7 +729,7 @@ class BoTSORT(object):
                             track.tlwh[0]+track.tlwh[2],
                             track.tlwh[1]+track.tlwh[3], 
                             track.score, 
-                            track.cls, 
+                            max(track.cls_hist, key=lambda x: x[1])[0], 
                             track.track_id])
         return np.array(tracks)
     
